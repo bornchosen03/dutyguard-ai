@@ -1,0 +1,22 @@
+# Node
+frontend/node_modules/
+node_modules/
+
+# Vite build output
+frontend/dist/
+
+# Python
+backend/.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Logs
+logs/
+
+# Environment files
+.env
+.env.*
+
+# macOS
+.DS_Store
