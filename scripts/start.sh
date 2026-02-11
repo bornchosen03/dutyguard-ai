@@ -8,10 +8,17 @@ echo "[start] Working directory: $ROOT"
 
 echo "[start] Installing frontend dependencies (safe, uses legacy-peer-deps)"
 cd "$ROOT/frontend"
-npm install --legacy-peer-deps
 
-echo "[start] Building frontend (production)"
-npm run build
+# Only attempt npm install/build if `npm` is available in PATH. This avoids
+# failing under launchd where users often run Node via nvm and npm isn't on the
+# default PATH.
+if command -v npm >/dev/null 2>&1; then
+	npm install --legacy-peer-deps
+	echo "[start] Building frontend (production)"
+	npm run build
+else
+	echo "[start] npm not found in PATH; skipping frontend install/build"
+fi
 
 echo "[start] Starting backend (uvicorn) on 127.0.0.1:8080"
 cd "$ROOT/backend"
