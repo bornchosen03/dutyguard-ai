@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: dutyguard-api
+    env: python
+    plan: free
+    autoDeploy: true
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: DUTYGUARD_ALLOWED_ORIGINS
+        value: "*"

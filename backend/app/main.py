@@ -22,6 +22,7 @@ from typing import Any
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi import Form
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -45,7 +46,34 @@ INTAKES_DIR.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(title="DutyGuard-AI", version="0.1.0")
 
+
+def _parse_allowed_origins(value: str) -> list[str]:
+    raw = (value or "").strip()
+    if not raw or raw == "*":
+        return ["*"]
+    return [part.strip() for part in raw.split(",") if part.strip()]
+
+
+_allowed_origins = _parse_allowed_origins(os.getenv("DUTYGUARD_ALLOWED_ORIGINS", "*"))
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_allowed_origins,
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(tariff_logic_router)
+
+
+@app.get("/")
+def root() -> dict[str, str]:
+    return {
+        "name": "DutyGuard-AI API",
+        "health": "/health",
+        "alerts": "/api/alerts",
+        "classify": "/api/classify",
+    }
 
 
 @app.get("/health")
