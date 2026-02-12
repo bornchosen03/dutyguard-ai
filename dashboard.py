@@ -12,7 +12,12 @@ import plotly.express as px
 import requests
 import streamlit as st
 
+from adcvd_checker import check_ad_cvd_risk
+from de_minimis_optimizer import evaluate_de_minimis
 from drawback_audit import DrawbackAuditAgent
+from precedent_agent import PrecedentAgent
+from sourcing_arbitrage import SourcingOption, choose_best_sourcing
+from war_room import as_rows, build_war_room_report
 
 
 DEFAULT_API_BASE = os.environ.get("DUTYGUARD_API_BASE", "http://127.0.0.1:8080")
@@ -193,6 +198,63 @@ def show_drawback_page() -> None:
     )
 
 
+def show_war_room_page(alerts_payload: Optional[dict[str, Any]]) -> None:
+    st.header("🚨 Tariff War Room")
+    report = build_war_room_report(alerts_payload)
+    st.caption(f"Generated: {report.generated_at_utc}")
+    rows = as_rows(report)
+    if rows:
+        st.dataframe(rows, use_container_width=True)
+    else:
+        st.info("No active war-room signals.")
+
+
+def show_optimizers_page() -> None:
+    st.header("🧠 Trade Optimizers")
+
+    c1, c2 = st.columns(2)
+    with c1:
+        st.subheader("De Minimis Optimizer")
+        order_value = st.number_input("Order value (USD)", min_value=0.0, value=650.0, step=25.0, key="mini_val")
+        threshold = st.number_input("Threshold (USD)", min_value=0.0, value=800.0, step=50.0, key="mini_thr")
+        plan = evaluate_de_minimis(order_value, threshold)
+        st.write("Eligible:", "Yes" if plan.eligible else "No")
+        st.caption(plan.recommendation)
+
+        st.subheader("AD/CVD Risk Checker")
+        hs_code = st.text_input("HS code", value="7208.38", key="ad_hs")
+        origin = st.text_input("Origin country (ISO-2)", value="CN", key="ad_origin")
+        ad = check_ad_cvd_risk(hs_code, origin)
+        st.write("Risk:", ad.risk_level.upper())
+        st.caption(ad.notes)
+
+    with c2:
+        st.subheader("Sourcing Arbitrage")
+        base_value = st.number_input("Base product value (USD)", min_value=0.0, value=100000.0, step=1000.0, key="arb_base")
+        a_country = st.text_input("Option A country", value="VN", key="arb_a_country")
+        a_duty = st.number_input("A duty rate (%)", min_value=0.0, value=5.0, step=0.5, key="arb_a_duty")
+        a_log = st.number_input("A logistics (USD)", min_value=0.0, value=4200.0, step=100.0, key="arb_a_log")
+        b_country = st.text_input("Option B country", value="MX", key="arb_b_country")
+        b_duty = st.number_input("B duty rate (%)", min_value=0.0, value=2.0, step=0.5, key="arb_b_duty")
+        b_log = st.number_input("B logistics (USD)", min_value=0.0, value=6800.0, step=100.0, key="arb_b_log")
+
+        decision = choose_best_sourcing(
+            base_value_usd=base_value,
+            option_a=SourcingOption(country=a_country, duty_rate_pct=a_duty, logistics_cost_usd=a_log),
+            option_b=SourcingOption(country=b_country, duty_rate_pct=b_duty, logistics_cost_usd=b_log),
+        )
+        st.success(f"Best sourcing: {decision.best_country}")
+        st.metric("Estimated total cost", f"${decision.estimated_total_cost_usd:,.0f}")
+        st.caption(decision.rationale)
+
+        st.subheader("Precedent Search")
+        query = st.text_input("Search precedent", value="lithium battery classification", key="prec_query")
+        matches = PrecedentAgent().search(query, top_k=3)
+        for m in matches:
+            st.write(f"- **{m.title}** ({m.source})")
+            st.caption(m.summary)
+
+
 # --- PAGE CONFIGURATION ---
 st.set_page_config(page_title="DutyGuard AI — Command Center", layout="wide", page_icon="🛡️")
 
@@ -247,7 +309,7 @@ with st.sidebar:
         st.error("API: offline")
         st.caption(f"Details: {health_msg}")
 
-    page = st.radio("Command Center", ["Overview", "Duty Drawback Audit"], index=0)
+    page = st.radio("Command Center", ["Overview", "Duty Drawback Audit", "War Room", "Trade Optimizers"], index=0)
     region = st.selectbox("Global Region", ["North America (USMCA)", "European Union", "ASEAN", "China"])
     risk_threshold = st.slider("Alert Sensitivity", 0.0, 1.0, 0.75)
     st.caption("Current API:")
@@ -267,6 +329,15 @@ with st.sidebar:
 # --- MAIN DASHBOARD INTERFACE ---
 if page == "Duty Drawback Audit":
     show_drawback_page()
+    st.stop()
+
+if page == "War Room":
+    alerts_payload = load_alerts_json(api_base) if healthy else None
+    show_war_room_page(alerts_payload)
+    st.stop()
+
+if page == "Trade Optimizers":
+    show_optimizers_page()
     st.stop()
 
 st.title("🛡️ DutyGuard AI Command Center")
