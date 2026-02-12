@@ -5,7 +5,7 @@ This file documents the current local setup and quick run instructions.
 Overview
 
 - Frontend: Vite + React. Production build is in `frontend/dist/`.
-- Backend: Minimal ASGI app at `backend/app/main.py` served by Uvicorn on 127.0.0.1:8080.
+- Backend: FastAPI app at `backend/app/main.py` served by Uvicorn on 127.0.0.1:8080.
 - Scripts: `scripts/start.sh`, `scripts/dev.sh`, `scripts/install_launchd_with_path.sh`, `scripts/setup_fastapi_env.sh`.
 
 Run (production-like)
@@ -30,6 +30,20 @@ cd /path/to/DutyGuard-AI
 ```zsh
 curl http://127.0.0.1:8080/
 curl http://127.0.0.1:8080/health
+
+# Tariff files (upload + list)
+
+Upload a tariff-related document:
+
+```zsh
+curl -sS -F "file=@/path/to/your-file.pdf" http://127.0.0.1:8080/api/tariff-files
+```
+
+List uploaded files:
+
+```zsh
+curl -sS http://127.0.0.1:8080/api/tariff-files
+```
 ```
 
 Development

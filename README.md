@@ -82,4 +82,9 @@ See `/docs` for:
 
 ---
 
+### Fees
+
+- The industry standard is a Contingency Fee ranging from 15% to 30% of the recovered funds.
+
+
 **Note**: If you prefer a different backend (Node.js/Nest/Express) or frontend (Next.js), tell me and I can re-scaffold accordingly.

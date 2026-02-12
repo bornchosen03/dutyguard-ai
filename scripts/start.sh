@@ -22,7 +22,37 @@ fi
 
 echo "[start] Starting backend (uvicorn) on 127.0.0.1:8080"
 cd "$ROOT/backend"
-source .venv/bin/activate 2>/dev/null || true
+
+# Prefer the FastAPI venv if present; fall back to the default venv.
+if [ -d ".venv-fastapi" ]; then
+	source .venv-fastapi/bin/activate
+	if python -c "import fastapi" >/dev/null 2>&1; then
+		echo "[start] Using backend venv: .venv-fastapi"
+		if ! python -c "import multipart" >/dev/null 2>&1; then
+			echo "[start] Installing backend dependency: python-multipart"
+			pip install python-multipart
+		fi
+	else
+		deactivate || true
+	fi
+fi
+
+if ! python -c "import fastapi" >/dev/null 2>&1; then
+	# Ensure backend venv and dependencies exist
+	if [ ! -d ".venv" ]; then
+		echo "[start] Creating backend venv (.venv)"
+		python3 -m venv .venv
+	fi
+
+	source .venv/bin/activate
+	echo "[start] Using backend venv: .venv"
+	python -m pip install --upgrade pip >/dev/null 2>&1 || true
+
+	if ! python -c "import fastapi" >/dev/null 2>&1; then
+		echo "[start] Installing backend dependencies"
+		pip install -r requirements.txt
+	fi
+fi
 
 # ensure logs dir
 mkdir -p "$ROOT/logs"

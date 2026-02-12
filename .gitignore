@@ -11,6 +11,16 @@ __pycache__/
 *.py[cod]
 *.pyo
 
+# Backend runtime data (do not commit)
+backend/data/uploads/
+backend/data/intakes/
+backend/data/reasoning_logs/
+
+# Knowledge base runtime artifacts (keep README.md)
+knowledge_base/*.csv
+knowledge_base/*.json
+knowledge_base/*.previous.csv
+
 # Logs
 logs/
 
