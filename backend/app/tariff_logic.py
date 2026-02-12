@@ -30,6 +30,9 @@ class TariffResponse(BaseModel):
     confidence: float
     confidence_interval: Tuple[float, float]
     requires_human_review: bool
+    review_reasons: List[str]
+    legal_citations: List[str]
+    legal_disclaimer: str
     engineering_tip: Optional[str]
     total_landed_cost: float
     reasoning_log_path: Optional[str] = None
@@ -96,6 +99,31 @@ def _confidence_interval(confidence: float) -> Tuple[float, float]:
     return (lo, hi)
 
 
+def _legal_citations() -> List[str]:
+    return [
+        "General Rules of Interpretation (GRI) 1 and 6",
+        "HTSUS Section and Chapter Notes (as applicable)",
+        "19 CFR Part 141 (entry documentation requirements)",
+        "19 CFR Part 152 (customs valuation framework)",
+        "CBP CROSS rulings (fact-specific precedent)",
+    ]
+
+
+def _review_reasons(product: ProductSpecs, ci: Tuple[float, float]) -> List[str]:
+    reasons: List[str] = []
+    if len((product.description or "").strip()) < 30:
+        reasons.append("Product description is too short for reliable legal classification.")
+    if not product.materials:
+        reasons.append("Material composition is missing.")
+    if len((product.intended_use or "").strip()) < 8:
+        reasons.append("Intended use detail is insufficient.")
+    if ci[0] < 0.92:
+        reasons.append("Lower-bound confidence is below legal review threshold (0.92).")
+    if not reasons:
+        reasons.append("MVP safeguard: final determination still requires licensed customs/legal review.")
+    return reasons
+
+
 @router.post("/classify", response_model=TariffResponse)
 async def classify_product(product: ProductSpecs) -> TariffResponse:
     agent = TariffAgent(product)
@@ -106,7 +134,8 @@ async def classify_product(product: ProductSpecs) -> TariffResponse:
 
     confidence = _confidence_from_risk(0.15)
     ci = _confidence_interval(confidence)
-    requires_human_review = ci[0] < 0.92
+    review_reasons = _review_reasons(product, ci)
+    requires_human_review = len(review_reasons) > 0
 
     response = TariffResponse(
         suggested_hs_code=suggested_code,
@@ -120,6 +149,12 @@ async def classify_product(product: ProductSpecs) -> TariffResponse:
         confidence=confidence,
         confidence_interval=ci,
         requires_human_review=requires_human_review,
+        review_reasons=review_reasons,
+        legal_citations=_legal_citations(),
+        legal_disclaimer=(
+            "This output is decision-support only and not legal advice; "
+            "final tariff classification requires qualified customs/legal review."
+        ),
         engineering_tip=agent.get_engineering_tip(suggested_code),
         total_landed_cost=agent.calculate_landed_cost(duty_percent),
     )
@@ -133,6 +168,8 @@ async def classify_product(product: ProductSpecs) -> TariffResponse:
         "policy": {
             "human_in_the_loop_threshold": 0.92,
             "requires_human_review": requires_human_review,
+            "review_reasons": review_reasons,
+            "legal_disclaimer": response.legal_disclaimer,
         },
     }
     response.reasoning_log_path = _write_reasoning_log(log_payload)
