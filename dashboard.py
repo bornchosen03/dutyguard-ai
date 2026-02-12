@@ -15,7 +15,7 @@ import streamlit as st
 from drawback_audit import DrawbackAuditAgent
 
 
-API_BASE = os.environ.get("DUTYGUARD_API_BASE", "http://127.0.0.1:8080")
+DEFAULT_API_BASE = os.environ.get("DUTYGUARD_API_BASE", "http://127.0.0.1:8080")
 
 
 CAS_RE = re.compile(r"\b(\d{2,7}-\d{2}-\d)\b")
@@ -47,9 +47,27 @@ def estimate_cbam_carbon_tariff(
     return chargeable * price
 
 
-def call_classify_api(prod: dict[str, Any]) -> tuple[bool, dict[str, Any] | str]:
+def _safe_get_secrets_value(key: str) -> Optional[str]:
     try:
-        res = requests.post(f"{API_BASE}/api/classify", json=prod, timeout=30)
+        if key in st.secrets:
+            value = st.secrets[key]
+            return str(value) if value is not None else None
+    except Exception:
+        return None
+    return None
+
+
+def get_api_base() -> str:
+    if "api_base" in st.session_state and st.session_state.api_base:
+        return str(st.session_state.api_base)
+
+    secret = _safe_get_secrets_value("DUTYGUARD_API_BASE")
+    return (secret or DEFAULT_API_BASE).rstrip("/")
+
+
+def call_classify_api(api_base: str, prod: dict[str, Any]) -> tuple[bool, dict[str, Any] | str]:
+    try:
+        res = requests.post(f"{api_base}/api/classify", json=prod, timeout=30)
         if not res.ok:
             return False, f"{res.status_code}: {res.text}"
         return True, res.json()
@@ -57,9 +75,21 @@ def call_classify_api(prod: dict[str, Any]) -> tuple[bool, dict[str, Any] | str]
         return False, str(exc)
 
 
-def load_alerts_json() -> Optional[dict[str, Any]]:
+@st.cache_data(ttl=20, show_spinner=False)
+def api_health(api_base: str) -> tuple[bool, str]:
     try:
-        res = requests.get(f"{API_BASE}/api/alerts", timeout=10)
+        res = requests.get(f"{api_base}/health", timeout=5)
+        if res.ok:
+            return True, "ok"
+        return False, f"{res.status_code}: {res.text[:200]}"
+    except Exception as exc:
+        return False, str(exc)
+
+
+@st.cache_data(ttl=30, show_spinner=False)
+def load_alerts_json(api_base: str) -> Optional[dict[str, Any]]:
+    try:
+        res = requests.get(f"{api_base}/api/alerts", timeout=10)
         if res.ok:
             return res.json()
     except Exception:
@@ -147,26 +177,83 @@ def show_drawback_page() -> None:
 
 
 # --- PAGE CONFIGURATION ---
-st.set_page_config(page_title="Global Tariff Intelligence 2026", layout="wide", page_icon="🛡️")
+st.set_page_config(page_title="DutyGuard AI — Command Center", layout="wide", page_icon="🛡️")
+
+
+def demo_classify(description: str) -> dict[str, Any]:
+    text = (description or "").lower()
+    if any(k in text for k in ["drone", "quad", "uav"]):
+        hs = "8806.22"
+        rate = "0–5% (varies)"
+    elif any(k in text for k in ["lithium", "battery", "li-ion", "lion"]):
+        hs = "8507.60"
+        rate = "3.4% (example)"
+    elif any(k in text for k in ["steel", "bolt", "screw", "fastener"]):
+        hs = "7318.15"
+        rate = "Free–8.5% (varies)"
+    else:
+        hs = "8479.89"
+        rate = "2.5% (example)"
+
+    return {
+        "suggested_hs_code": hs,
+        "duty_rate": rate,
+        "confidence_interval": [0.55, 0.80],
+        "requires_human_review": True,
+        "reasoning_manifesto": [
+            "Demo mode: backend API is not connected yet.",
+            "Deploy the FastAPI backend (Render recommended) and set DUTYGUARD_API_BASE in Streamlit Secrets.",
+            "This output is a placeholder to keep the dashboard usable.",
+        ],
+    }
+
 
 # --- SIDEBAR: CONTROLS & SETTINGS ---
 with st.sidebar:
-    st.title("Settings")
+    st.title("DutyGuard AI")
+
+    api_base = get_api_base()
+    healthy, health_msg = api_health(api_base)
+
+    st.subheader("Connection")
+    st.text_input(
+        "API base URL",
+        value=api_base,
+        key="api_base",
+        help="Set this to your hosted backend, e.g. https://dutyguard-api-xxxx.onrender.com",
+    )
+    api_base = get_api_base()
+    healthy, health_msg = api_health(api_base)
+    if healthy:
+        st.success("API: online")
+    else:
+        st.error("API: offline")
+        st.caption(f"Details: {health_msg}")
+
     page = st.radio("Command Center", ["Overview", "Duty Drawback Audit"], index=0)
     region = st.selectbox("Global Region", ["North America (USMCA)", "European Union", "ASEAN", "China"])
     risk_threshold = st.slider("Alert Sensitivity", 0.0, 1.0, 0.75)
-    st.caption("Connects to backend at:")
-    st.code(API_BASE)
+    st.caption("Current API:")
+    st.code(api_base)
 
-    st.info("System Status: Online (if API reachable)")
+    st.caption("Deploy backend on Render:")
+    st.markdown("- https://render.com")
+    st.markdown("- New + → Blueprint → pick `bornchosen03/dutyguard-ai`")
+    st.markdown("- It will use `render.yaml` to deploy the API")
+
+    if not healthy:
+        st.info(
+            "Dashboard is in Demo mode until a backend is deployed. "
+            "Classify + Alerts will show placeholders."
+        )
 
 # --- MAIN DASHBOARD INTERFACE ---
 if page == "Duty Drawback Audit":
     show_drawback_page()
     st.stop()
 
-st.title("🌎 Global Tariff Command Center")
-st.markdown("### Real-Time Margin & Compliance Intelligence")
+st.title("🛡️ DutyGuard AI Command Center")
+st.markdown("### Tariff, drawback, and compliance intelligence")
 
 # --- ROW 1: TOP LEVEL KPIs (MVP placeholders) ---
 col1, col2, col3, col4 = st.columns(4)
@@ -194,6 +281,10 @@ with col_left:
         st.write("Detected CAS numbers:", ", ".join(cas))
 
     if st.button("Run AI Intelligence Analysis"):
+        if not prod_desc.strip():
+            st.warning("Add a product description first.")
+            st.stop()
+
         # Map text area into current backend schema
         payload = {
             "name": "Dashboard Product",
@@ -205,19 +296,24 @@ with col_left:
             "intended_use": "Client-submitted dashboard analysis",
         }
 
-        ok, out = call_classify_api(payload)
-        if not ok:
-            st.error(f"API classify failed: {out}")
-        else:
-            data = out if isinstance(out, dict) else {}
-            st.success(f"✅ Suggested HS Code: {data.get('suggested_hs_code')}")
-            st.write("**Duty Rate:**", data.get("duty_rate"))
-            st.write("**Confidence Interval:**", data.get("confidence_interval"))
-            if data.get("requires_human_review"):
-                st.warning("Human-in-the-loop review required (min CI < 0.92).")
-            st.info("**Reasoning Manifesto:**\n\n" + "\n".join(data.get("reasoning_manifesto", [])))
-            if data.get("reasoning_log_path"):
-                st.caption(f"Audit log: {data['reasoning_log_path']}")
+        with st.spinner("Analyzing..."):
+            if healthy:
+                ok, out = call_classify_api(api_base, payload)
+                if not ok:
+                    st.error(f"API classify failed: {out}")
+                    st.stop()
+                data = out if isinstance(out, dict) else {}
+            else:
+                data = demo_classify(prod_desc)
+
+        st.success(f"✅ Suggested HS Code: {data.get('suggested_hs_code')}")
+        st.write("**Duty Rate:**", data.get("duty_rate"))
+        st.write("**Confidence Interval:**", data.get("confidence_interval"))
+        if data.get("requires_human_review"):
+            st.warning("Human-in-the-loop review required (min CI < 0.92).")
+        st.info("**Reasoning Manifesto:**\n\n" + "\n".join(data.get("reasoning_manifesto", [])))
+        if data.get("reasoning_log_path"):
+            st.caption(f"Audit log: {data['reasoning_log_path']}")
 
 with col_right:
     st.markdown("#### Financial Simulation")
@@ -235,11 +331,17 @@ with col_right:
 # --- ROW 2b: Alerts snapshot ---
 st.divider()
 st.subheader("🛰️ Alert Agent Snapshot")
-alerts = load_alerts_json()
-if alerts is None:
-    st.caption("Alerts endpoint not available yet. (Next step: add `GET /api/alerts`.)")
+if healthy:
+    alerts = load_alerts_json(api_base)
+    if alerts is None:
+        st.caption("No alerts yet (or alert agent hasn’t generated `tariff_alerts.json`).")
+    else:
+        st.json(alerts)
 else:
-    st.json(alerts)
+    st.info(
+        "Alerts are unavailable until the backend is deployed. "
+        "Once Render is live and DUTYGUARD_API_BASE is set, this will populate."
+    )
 
 # --- ROW 3: GEOPOLITICAL RISK HEATMAP (MVP mock) ---
 st.divider()
