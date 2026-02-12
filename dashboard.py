@@ -57,12 +57,29 @@ def _safe_get_secrets_value(key: str) -> Optional[str]:
     return None
 
 
+def normalize_api_base(value: str) -> str:
+    raw = (value or "").strip()
+    if not raw:
+        return ""
+
+    # Common paste errors: full /health URL, or /api prefix.
+    raw = raw.rstrip("/")
+    if raw.endswith("/health"):
+        raw = raw[: -len("/health")]
+    raw = raw.rstrip("/")
+    if raw.endswith("/api"):
+        raw = raw[: -len("/api")]
+    return raw.rstrip("/")
+
+
 def get_api_base() -> str:
     if "api_base" in st.session_state and st.session_state.api_base:
-        return str(st.session_state.api_base)
+        candidate = normalize_api_base(str(st.session_state.api_base))
+        return candidate or DEFAULT_API_BASE.rstrip("/")
 
     secret = _safe_get_secrets_value("DUTYGUARD_API_BASE")
-    return (secret or DEFAULT_API_BASE).rstrip("/")
+    candidate = normalize_api_base(secret or "")
+    return (candidate or DEFAULT_API_BASE).rstrip("/")
 
 
 def call_classify_api(api_base: str, prod: dict[str, Any]) -> tuple[bool, dict[str, Any] | str]:
