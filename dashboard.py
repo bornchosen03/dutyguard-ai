@@ -291,6 +291,10 @@ def demo_classify(description: str) -> dict[str, Any]:
 with st.sidebar:
     st.title("DutyGuard AI")
 
+    page_options = ["Overview", "Duty Drawback Audit", "War Room", "Trade Optimizers"]
+    if "page" not in st.session_state or st.session_state["page"] not in page_options:
+        st.session_state["page"] = "Overview"
+
     api_base = get_api_base()
     healthy, health_msg = api_health(api_base)
 
@@ -309,7 +313,7 @@ with st.sidebar:
         st.error("API: offline")
         st.caption(f"Details: {health_msg}")
 
-    page = st.radio("Command Center", ["Overview", "Duty Drawback Audit", "War Room", "Trade Optimizers"], index=0)
+    page = st.radio("Command Center", page_options, key="page")
     region = st.selectbox("Global Region", ["North America (USMCA)", "European Union", "ASEAN", "China"])
     risk_threshold = st.slider("Alert Sensitivity", 0.0, 1.0, 0.75)
     st.caption("Current API:")
@@ -327,6 +331,11 @@ with st.sidebar:
         )
 
 # --- MAIN DASHBOARD INTERFACE ---
+if page != "Overview":
+    if st.button("← Back to Home", type="secondary"):
+        st.session_state["page"] = "Overview"
+        st.rerun()
+
 if page == "Duty Drawback Audit":
     show_drawback_page()
     st.stop()
