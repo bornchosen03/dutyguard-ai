@@ -24,6 +24,7 @@ DEFAULT_API_BASE = os.environ.get("DUTYGUARD_API_BASE", "http://127.0.0.1:8080")
 
 
 CAS_RE = re.compile(r"\b(\d{2,7}-\d{2}-\d)\b")
+MOBILE_UA_RE = re.compile(r"android|iphone|ipad|ipod|mobile", re.IGNORECASE)
 
 
 def extract_cas_numbers(text: str) -> list[str]:
@@ -123,6 +124,21 @@ def load_alerts_json(api_base: str) -> Optional[dict[str, Any]]:
 
 def is_mobile_mode() -> bool:
     return bool(st.session_state.get("mobile_mode", False))
+
+
+def detect_mobile_from_context() -> bool:
+    """Best-effort mobile detection from request headers.
+
+    Falls back to False when Streamlit context headers are unavailable.
+    """
+    try:
+        headers = st.context.headers  # type: ignore[attr-defined]
+        if not headers:
+            return False
+        ua = str(headers.get("user-agent", ""))
+        return bool(MOBILE_UA_RE.search(ua))
+    except Exception:
+        return False
 
 
 def show_drawback_page() -> None:
@@ -312,6 +328,8 @@ with st.sidebar:
     page_options = ["Overview", "Duty Drawback Audit", "War Room", "Trade Optimizers"]
     if "page" not in st.session_state or st.session_state["page"] not in page_options:
         st.session_state["page"] = "Overview"
+    if "mobile_mode" not in st.session_state:
+        st.session_state["mobile_mode"] = detect_mobile_from_context()
 
     api_base = get_api_base()
     healthy, health_msg = api_health(api_base)
@@ -333,6 +351,8 @@ with st.sidebar:
 
     page = st.radio("Command Center", page_options, key="page")
     st.checkbox("Mobile-friendly layout", key="mobile_mode", help="Stack columns for smaller screens.")
+    if detect_mobile_from_context():
+        st.caption("Mobile device detected: layout defaults to mobile-friendly.")
     region = st.selectbox("Global Region", ["North America (USMCA)", "European Union", "ASEAN", "China"])
     risk_threshold = st.slider("Alert Sensitivity", 0.0, 1.0, 0.75)
     st.caption("Current API:")
