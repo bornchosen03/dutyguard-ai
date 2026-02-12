@@ -168,6 +168,12 @@ export default function App() {
         </button>
       </nav>
 
+      {tab !== "overview" && (
+        <div style={{ marginBottom: 12 }}>
+          <button onClick={() => setTab("overview")}>← Back to Home</button>
+        </div>
+      )}
+
       {tab === "overview" && (
         <section>
           <h2>How we help</h2>
