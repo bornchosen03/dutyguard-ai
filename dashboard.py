@@ -121,15 +121,23 @@ def load_alerts_json(api_base: str) -> Optional[dict[str, Any]]:
     return None
 
 
+def is_mobile_mode() -> bool:
+    return bool(st.session_state.get("mobile_mode", False))
+
+
 def show_drawback_page() -> None:
     st.header("💰 Duty Drawback Recovery Portal")
     st.info("CBP Electronic Refund Mandate: Feb 6, 2026 — ACH only (no paper checks).")
 
-    col1, col2 = st.columns(2)
-    with col1:
+    if is_mobile_mode():
         st.metric("Recoverable Duties (5-Year Lookback)", "$412,890", delta="Ready to File")
-    with col2:
         st.metric("Accelerated Payment Status", "Active", help="Typical refund timing varies by program.")
+    else:
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Recoverable Duties (5-Year Lookback)", "$412,890", delta="Ready to File")
+        with col2:
+            st.metric("Accelerated Payment Status", "Active", help="Typical refund timing varies by program.")
 
     st.subheader("Run an audit (CSV upload)")
     st.caption("Imports CSV requires: `hs_code`, `duty_paid` (and optional `import_date`).")
@@ -212,8 +220,7 @@ def show_war_room_page(alerts_payload: Optional[dict[str, Any]]) -> None:
 def show_optimizers_page() -> None:
     st.header("🧠 Trade Optimizers")
 
-    c1, c2 = st.columns(2)
-    with c1:
+    def render_left() -> None:
         st.subheader("De Minimis Optimizer")
         order_value = st.number_input("Order value (USD)", min_value=0.0, value=650.0, step=25.0, key="mini_val")
         threshold = st.number_input("Threshold (USD)", min_value=0.0, value=800.0, step=50.0, key="mini_thr")
@@ -228,7 +235,7 @@ def show_optimizers_page() -> None:
         st.write("Risk:", ad.risk_level.upper())
         st.caption(ad.notes)
 
-    with c2:
+    def render_right() -> None:
         st.subheader("Sourcing Arbitrage")
         base_value = st.number_input("Base product value (USD)", min_value=0.0, value=100000.0, step=1000.0, key="arb_base")
         a_country = st.text_input("Option A country", value="VN", key="arb_a_country")
@@ -253,6 +260,17 @@ def show_optimizers_page() -> None:
         for m in matches:
             st.write(f"- **{m.title}** ({m.source})")
             st.caption(m.summary)
+
+    if is_mobile_mode():
+        render_left()
+        st.divider()
+        render_right()
+    else:
+        c1, c2 = st.columns(2)
+        with c1:
+            render_left()
+        with c2:
+            render_right()
 
 
 # --- PAGE CONFIGURATION ---
@@ -314,6 +332,7 @@ with st.sidebar:
         st.caption(f"Details: {health_msg}")
 
     page = st.radio("Command Center", page_options, key="page")
+    st.checkbox("Mobile-friendly layout", key="mobile_mode", help="Stack columns for smaller screens.")
     region = st.selectbox("Global Region", ["North America (USMCA)", "European Union", "ASEAN", "China"])
     risk_threshold = st.slider("Alert Sensitivity", 0.0, 1.0, 0.75)
     st.caption("Current API:")
@@ -353,16 +372,26 @@ st.title("🛡️ DutyGuard AI Command Center")
 st.markdown("### Tariff, drawback, and compliance intelligence")
 
 # --- ROW 1: TOP LEVEL KPIs (MVP placeholders) ---
-col1, col2, col3, col4 = st.columns(4)
-col1.metric("Total Landed Cost", "$1.2M", "+$45k", delta_color="inverse")
-col2.metric("Tariff Engineering Savings", "$312k", "15.4%", delta_color="normal")
-col3.metric("Audit Risk Score", "0.12", "-0.05", delta_color="normal")
-col4.metric("Live Tracked SKUs", "4,205", "New Law Detected", delta_color="off")
+if is_mobile_mode():
+    st.metric("Total Landed Cost", "$1.2M", "+$45k", delta_color="inverse")
+    st.metric("Tariff Engineering Savings", "$312k", "15.4%", delta_color="normal")
+    st.metric("Audit Risk Score", "0.12", "-0.05", delta_color="normal")
+    st.metric("Live Tracked SKUs", "4,205", "New Law Detected", delta_color="off")
+else:
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Total Landed Cost", "$1.2M", "+$45k", delta_color="inverse")
+    col2.metric("Tariff Engineering Savings", "$312k", "15.4%", delta_color="normal")
+    col3.metric("Audit Risk Score", "0.12", "-0.05", delta_color="normal")
+    col4.metric("Live Tracked SKUs", "4,205", "New Law Detected", delta_color="off")
 
 # --- ROW 2: AI INTERACTIVE CLASSIFIER ---
 st.divider()
 st.subheader("🔍 Instant AI Product Classifier")
-col_left, col_right = st.columns([2, 1])
+if is_mobile_mode():
+    col_left = st.container()
+    col_right = st.container()
+else:
+    col_left, col_right = st.columns([2, 1])
 
 with col_left:
     prod_desc = st.text_area(
