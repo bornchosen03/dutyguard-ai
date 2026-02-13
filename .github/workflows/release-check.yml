@@ -1,0 +1,47 @@
+name: Release Check
+
+on:
+  push:
+    branches: [ main, chore/add-maintenance-scripts ]
+  schedule:
+    - cron: '0 * * * *' # hourly
+  workflow_dispatch: {}
+
+jobs:
+  release-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install python venv
+        run: |
+          python -m venv .venv-ci
+          source .venv-ci/bin/activate
+          pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Install frontend deps
+        run: |
+          cd frontend
+          npm ci --silent
+
+      - name: Make scripts executable
+        run: |
+          chmod +x ./scripts/*.sh
+
+      - name: Run release check
+        env:
+          PYTHON_BIN: ${{ github.workspace }}/.venv-ci/bin/python
+        run: |
+          ./scripts/release_check.sh
