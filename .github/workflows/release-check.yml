@@ -56,6 +56,11 @@ jobs:
         run: |
           chmod +x ./scripts/*.sh
 
+      - name: Prune fallback notification log
+        run: |
+          chmod +x ./scripts/prune_notifications.sh
+          ./scripts/prune_notifications.sh backend/data/intake_notifications.jsonl 1000 || true
+
       - name: Run release check
         env:
           PYTHON_BIN: ${{ github.workspace }}/.venv-ci/bin/python
