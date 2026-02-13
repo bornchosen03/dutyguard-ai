@@ -1,0 +1,5 @@
+# Proxy list for scraper (one proxy per line)
+# Format examples:
+# http://username:password@proxy.example.com:8080
+# socks5://proxy.example.com:1080
+# Leave blank if you don't have proxies; do NOT commit production credentials.

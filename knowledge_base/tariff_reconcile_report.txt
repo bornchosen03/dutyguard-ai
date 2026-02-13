@@ -1,0 +1,6 @@
+{
+  "total_existing_rows": 481,
+  "total_pdf_rows": 14471,
+  "matched_existing_with_pdf": 481,
+  "pdf_only_new_entries": 7495
+}

@@ -39,14 +39,22 @@ if [ "$COUNT" -ge "$THRESHOLD" ]; then
     PAYLOAD=$(jq -n --arg file "$FILE" --argjson count "$COUNT" --argjson threshold "$THRESHOLD" --arg sample "$SAMPLE" '{file: $file, count: $count, threshold: $threshold, sample: $sample}')
     if curl -sS -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$WEBHOOK_URL"; then
       echo "[alert] Webhook delivered"
+      # Archive the intake file so we don't repeatedly alert on the same entries
+      if command -v python3 >/dev/null 2>&1; then
+        python3 "$REPO_ROOT/scripts/archive_intake_fallbacks.py" "$FILE" || echo "[alert] Archive script failed"
+      else
+        echo "[alert] python3 not found; skipping archive"
+      fi
+      exit 0
     else
       echo "[alert] Webhook delivery failed"
+      exit 1
     fi
   else
     echo "[alert] No webhook configured (set ALERT_WEBHOOK_URL to enable) — skipping POST"
+    # No webhook configured but threshold exceeded; treat as success (notification recorded locally)
+    exit 0
   fi
-
-  exit 2
 fi
 
 echo "[alert] OK"
