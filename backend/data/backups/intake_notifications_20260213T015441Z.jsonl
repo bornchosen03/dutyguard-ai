@@ -1,0 +1,14 @@
+{"mode": "fallback", "reason": "missing_smtp_host", "created_at_utc": "2026-02-13T01:18:53Z", "intake_id": "intake_1770945533_12ceba77c2", "company": "Acme Imports", "email": "jane@acme.com", "files": []}
+{"mode": "fallback", "reason": "missing_smtp_host", "created_at_utc": "2026-02-13T01:20:38Z", "intake_id": "intake_1770945638_7f9c5d8448", "company": "Acme Imports", "email": "jane@acme.com", "files": []}
+{"mode": "fallback", "reason": "missing_smtp_host", "created_at_utc": "2026-02-13T01:21:33Z", "intake_id": "intake_1770945693_8f8cbfc08e", "company": "Acme Imports", "email": "jane@acme.com", "files": []}
+{"mode": "fallback", "reason": "missing_notify_to", "created_at_utc": "2026-02-13T01:22:16Z", "intake_id": "intake_1770945736_3eddccde0d", "company": "Acme Imports", "email": "jane@acme.com", "files": []}
+{"mode": "fallback", "reason": "missing_smtp_host", "created_at_utc": "2026-02-13T01:23:08Z", "intake_id": "intake_1770945788_37e2f5869a", "company": "Acme Imports", "email": "jane@acme.com", "files": []}
+{"mode": "fallback", "reason": "missing_smtp_host", "created_at_utc": "2026-02-13T01:24:53Z", "intake_id": "intake_1770945893_19c9463e77", "company": "Acme Imports", "email": "jane@acme.com", "files": []}
+{"mode": "fallback", "reason": "missing_smtp_host", "created_at_utc": "2026-02-13T01:26:58Z", "intake_id": "intake_1770946018_ae33d8727e", "company": "Acme Imports", "email": "jane@acme.com", "files": []}
+{"mode": "fallback", "reason": "missing_notify_to", "created_at_utc": "2026-02-13T01:27:20Z", "intake_id": "intake_1770946040_f0a677dd8e", "company": "Acme Imports", "email": "jane@acme.com", "files": []}
+{"mode": "fallback", "reason": "missing_smtp_host", "created_at_utc": "2026-02-13T01:28:05Z", "intake_id": "intake_1770946085_c3a3acd41f", "company": "Acme Imports", "email": "jane@acme.com", "files": []}
+{"mode": "fallback", "reason": "missing_notify_to", "created_at_utc": "2026-02-13T01:32:25Z", "intake_id": "intake_1770946345_63d3196af5", "company": "Acme Imports", "email": "jane@acme.com", "files": []}
+{"mode": "fallback", "reason": "missing_notify_to", "created_at_utc": "2026-02-13T01:32:37Z", "intake_id": "intake_1770946357_d02761373e", "company": "Acme Imports", "email": "jane@acme.com", "files": []}
+{"mode": "fallback", "reason": "missing_notify_to", "created_at_utc": "2026-02-13T01:39:43Z", "intake_id": "intake_1770946783_46d7519d13", "company": "Acme Imports", "email": "jane@acme.com", "files": []}
+{"mode": "fallback", "reason": "missing_notify_to", "created_at_utc": "2026-02-13T01:48:44Z", "intake_id": "intake_1770947324_7e55a41ce4", "company": "Acme Imports", "email": "jane@acme.com", "files": []}
+{"mode": "fallback", "reason": "missing_notify_to", "created_at_utc": "2026-02-13T01:53:49Z", "intake_id": "intake_1770947629_84bbfa9cf8", "company": "Acme Imports", "email": "jane@acme.com", "files": []}

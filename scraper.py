@@ -54,24 +54,53 @@ async def fetch_usitc_tariff_data(hs_code_prefix: str) -> ScrapeResult:
         print(f"🔍 USITC: searching HS prefix: {hs_code_prefix}")
         await page.goto(url, wait_until="domcontentloaded")
 
-        # The site layout changes over time; we try a couple selectors.
-        await page.wait_for_timeout(800)
+        # Give the page a little more time for JS-rendered tables to appear.
+        await page.wait_for_timeout(1500)
 
+        # Save raw HTML for debugging / selector tuning
+        try:
+            raw_html = await page.content()
+            raw_path = KNOWLEDGE_BASE / f"raw_usitc_{hs_code_prefix}.html"
+            raw_path.write_text(raw_html, encoding="utf-8")
+            print("📝 Saved raw HTML to", str(raw_path))
+        except Exception:
+            pass
+
+        # The site layout changes over time; try several selectors including tbody variants.
         table = None
-        for selector in ["table", ".table", ".table-responsive table"]:
-            table = await page.query_selector(selector)
+        selectors = [
+            "table",
+            ".table",
+            ".table-responsive table",
+            "table.dataTable",
+            "table.hts-table",
+            "tbody",
+        ]
+        for selector in selectors:
+            try:
+                table = await page.query_selector(selector)
+            except Exception:
+                table = None
             if table:
                 break
 
         rows: list[list[str]] = []
         if table:
-            tr_nodes = await table.query_selector_all("tr")
+            # If the selector is 'tbody' we need to find parent rows appropriately.
+            if selector == "tbody":
+                tr_nodes = await table.query_selector_all("tr")
+            else:
+                tr_nodes = await table.query_selector_all("tr")
+
             for tr in tr_nodes:
-                text = (await tr.inner_text()).strip()
+                try:
+                    text = (await tr.inner_text()).strip()
+                except Exception:
+                    continue
                 if not text:
                     continue
                 # split on tabs/newlines; keep non-empty
-                parts = [p.strip() for p in text.replace("\n", "\t").split("\t") if p.strip()]
+                parts = [pp.strip() for pp in text.replace("\n", "\t").split("\t") if pp.strip()]
                 if len(parts) >= 2:
                     rows.append(parts)
 

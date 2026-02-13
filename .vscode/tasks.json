@@ -1,0 +1,27 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run backend API tests",
+			"type": "shell",
+			"command": "/Users/bthrax/DutyGuard-AI/backend/.venv-fastapi/bin/python",
+			"args": [
+				"-m",
+				"pytest",
+				"backend/tests/test_api.py",
+				"-q"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Force reset stuck terminals",
+			"type": "shell",
+			"command": "zsh",
+			"args": [
+				"-lc",
+				"pkill -f 'uvicorn|streamlit|scripts/run_all.sh|python -c|fastapi.testclient' || true; pkill -f 'zsh|bash' || true; sleep 1; echo 'terminal-reset-done'"
+			],
+			"isBackground": false
+		}
+	]
+}

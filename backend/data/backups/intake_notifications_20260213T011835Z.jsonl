@@ -1,0 +1,11 @@
+{"mode": "fallback", "reason": "missing_notify_to", "created_at_utc": "2026-02-13T01:01:10Z", "intake_id": "intake_1770944470_39b110c65f", "company": "Acme Imports", "email": "jane@acme.com", "files": []}
+{"mode": "fallback", "reason": "missing_notify_to", "created_at_utc": "2026-02-13T01:06:15Z", "intake_id": "intake_1770944775_f58a1d81e8", "company": "Acme Imports", "email": "jane@acme.com", "files": []}
+{"mode": "fallback", "reason": "missing_smtp_host", "created_at_utc": "2026-02-13T01:07:56Z", "intake_id": "intake_1770944876_516089db19", "company": "Acme Imports", "email": "jane@acme.com", "files": []}
+{"mode": "fallback", "reason": "missing_smtp_host", "created_at_utc": "2026-02-13T01:09:37Z", "intake_id": "intake_1770944977_f5c7c8e35f", "company": "Acme Imports", "email": "jane@acme.com", "files": []}
+{"mode": "fallback", "reason": "missing_smtp_host", "created_at_utc": "2026-02-13T01:10:26Z", "intake_id": "intake_1770945026_90e9224cb8", "company": "SMTP Test Co", "email": "ops@example.com", "files": []}
+{"mode": "fallback", "reason": "missing_smtp_host", "created_at_utc": "2026-02-13T01:11:06Z", "intake_id": "intake_1770945066_3d393e94c8", "company": "Acme Imports", "email": "jane@acme.com", "files": []}
+{"mode": "fallback", "reason": "missing_notify_to", "created_at_utc": "2026-02-13T01:12:08Z", "intake_id": "intake_1770945128_7d111138df", "company": "Acme Imports", "email": "jane@acme.com", "files": []}
+{"mode": "fallback", "reason": "missing_smtp_host", "created_at_utc": "2026-02-13T01:12:56Z", "intake_id": "intake_1770945176_97fd653cea", "company": "Acme Imports", "email": "jane@acme.com", "files": []}
+{"mode": "fallback", "reason": "missing_smtp_host", "created_at_utc": "2026-02-13T01:15:40Z", "intake_id": "intake_1770945340_b9f267342f", "company": "Acme Imports", "email": "jane@acme.com", "files": []}
+{"mode": "fallback", "reason": "missing_smtp_host", "created_at_utc": "2026-02-13T01:16:59Z", "intake_id": "intake_1770945419_4e2ba7b0c7", "company": "Acme Imports", "email": "jane@acme.com", "files": []}
+{"mode": "fallback", "reason": "missing_notify_to", "created_at_utc": "2026-02-13T01:17:12Z", "intake_id": "intake_1770945432_0f8b55f711", "company": "Acme Imports", "email": "jane@acme.com", "files": []}

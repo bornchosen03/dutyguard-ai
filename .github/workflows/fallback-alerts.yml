@@ -1,0 +1,58 @@
+name: Fallback Alerts
+
+on:
+  schedule:
+    # Run hourly
+    - cron: '0 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  alert:
+    name: Check intake fallback alerts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Make scripts executable
+        run: |
+          chmod +x scripts/alert_on_fallbacks.sh
+
+      - name: Run alert script
+        env:
+          ALERT_WEBHOOK_URL: ${{ secrets.ALERT_WEBHOOK_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          # Ensure the notifications file exists (workflow repo workspace may be empty)
+          if [ ! -f backend/data/intake_notifications.jsonl ]; then
+            echo "" > backend/data/intake_notifications.jsonl || true
+          fi
+
+          # Run the alert script. If it exits non-zero (threshold exceeded), and a
+          # Slack webhook is configured, post a formatted Slack message with a small
+          # summary (count + last 3 entries).
+          set +e
+          ./scripts/alert_on_fallbacks.sh backend/data/intake_notifications.jsonl 5
+          ALERT_EXIT=$?
+          set -e
+
+          if [ "$ALERT_EXIT" -ne 0 ]; then
+            echo "[workflow] Alert threshold exceeded (exit $ALERT_EXIT)"
+            if [ -n "${SLACK_WEBHOOK_URL}" ]; then
+              COUNT=$(wc -l < backend/data/intake_notifications.jsonl || echo 0)
+              SAMPLE=$(tail -n 3 backend/data/intake_notifications.jsonl | jq -s '.' 2>/dev/null || tail -n 3 backend/data/intake_notifications.jsonl | sed 's/"/\\"/g' | awk '{printf "%s\\n", $0}')
+              PAYLOAD=$(jq -n --arg txt "🚨 *Fallback alert*: $COUNT entries in intake_notifications.jsonl" --arg sample "$SAMPLE" '{text: $txt, attachments: [{text: $sample}]}')
+              curl -sS -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$SLACK_WEBHOOK_URL" || true
+            else
+              echo "[workflow] No SLACK_WEBHOOK_URL configured; skipping Slack post"
+            fi
+            # Exit non-zero so the workflow run shows a problem (optional)
+            exit $ALERT_EXIT
+          else
+            echo "[workflow] No fallbacks above threshold"
+          fi

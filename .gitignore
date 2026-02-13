@@ -17,9 +17,13 @@ backend/data/intakes/
 backend/data/reasoning_logs/
 
 # Knowledge base runtime artifacts (keep README.md)
+# Keep most KB artifacts ignored, but allow explicit imports when needed.
 knowledge_base/*.csv
 knowledge_base/*.json
 knowledge_base/*.previous.csv
+
+# Large imported artifacts (do not check into git)
+knowledge_base/finalCopy_2026HTSRev3.pdf
 
 # Logs
 logs/

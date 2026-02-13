@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import time
 from pathlib import Path
@@ -36,6 +37,7 @@ class TariffResponse(BaseModel):
     engineering_tip: Optional[str]
     total_landed_cost: float
     reasoning_log_path: Optional[str] = None
+    review_ticket_id: Optional[str] = None
 
 
 class TariffAgent:
@@ -70,6 +72,12 @@ def _audit_dir() -> Path:
     return p
 
 
+def _review_queue_dir() -> Path:
+    p = (_repo_root() / "backend" / "data" / "review_queue").resolve()
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+
 def _write_reasoning_log(payload: dict) -> str:
     ts = int(time.time())
     filename = f"classify_{ts}_{payload.get('id', 'na')}.json"
@@ -99,6 +107,41 @@ def _confidence_interval(confidence: float) -> Tuple[float, float]:
     return (lo, hi)
 
 
+def _risk_score(product: ProductSpecs) -> float:
+    score = 0.03
+    description_len = len((product.description or "").strip())
+    intended_use_len = len((product.intended_use or "").strip())
+    material_count = len(product.materials or {})
+
+    if description_len < 30:
+        score += 0.18
+    elif description_len < 60:
+        score += 0.07
+
+    if intended_use_len < 8:
+        score += 0.12
+    elif intended_use_len < 20:
+        score += 0.05
+
+    if material_count == 0:
+        score += 0.25
+    elif material_count < 2:
+        score += 0.08
+
+    if product.value >= 100_000:
+        score += 0.10
+    elif product.value >= 25_000:
+        score += 0.05
+
+    if (product.origin_country or "").upper().strip() == "CN":
+        score += 0.05
+
+    return _clamp01(score)
+
+
+HUMAN_REVIEW_LOWER_CONFIDENCE_THRESHOLD = 0.90
+
+
 def _legal_citations() -> List[str]:
     return [
         "General Rules of Interpretation (GRI) 1 and 6",
@@ -117,11 +160,31 @@ def _review_reasons(product: ProductSpecs, ci: Tuple[float, float]) -> List[str]
         reasons.append("Material composition is missing.")
     if len((product.intended_use or "").strip()) < 8:
         reasons.append("Intended use detail is insufficient.")
-    if ci[0] < 0.92:
-        reasons.append("Lower-bound confidence is below legal review threshold (0.92).")
-    if not reasons:
-        reasons.append("MVP safeguard: final determination still requires licensed customs/legal review.")
+    if ci[0] < HUMAN_REVIEW_LOWER_CONFIDENCE_THRESHOLD:
+        reasons.append(
+            f"Lower-bound confidence is below legal review threshold ({HUMAN_REVIEW_LOWER_CONFIDENCE_THRESHOLD:.2f})."
+        )
     return reasons
+
+
+def _create_review_ticket(product: ProductSpecs, response: TariffResponse) -> str:
+    ts = int(time.time())
+    stable_hash = hashlib.sha256(f"{product.name}|{product.origin_country}|{product.value}".encode("utf-8")).hexdigest()[:8]
+    ticket_id = f"review_{ts}_{stable_hash}"
+    payload = {
+        "id": ticket_id,
+        "status": "open",
+        "created_at_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "request": product.model_dump(),
+        "response": response.model_dump(),
+        "review_reasons": response.review_reasons,
+        "decision": None,
+        "reviewer": None,
+        "decision_notes": None,
+        "decided_at_utc": None,
+    }
+    (_review_queue_dir() / f"{ticket_id}.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return ticket_id
 
 
 @router.post("/classify", response_model=TariffResponse)
@@ -132,7 +195,8 @@ async def classify_product(product: ProductSpecs) -> TariffResponse:
     suggested_code = "8471.30.01"
     duty_percent = 0.05
 
-    confidence = _confidence_from_risk(0.15)
+    risk_score = _risk_score(product)
+    confidence = _confidence_from_risk(risk_score)
     ci = _confidence_interval(confidence)
     review_reasons = _review_reasons(product, ci)
     requires_human_review = len(review_reasons) > 0
@@ -145,7 +209,7 @@ async def classify_product(product: ProductSpecs) -> TariffResponse:
             "Cross-referenced intended use: " + product.intended_use,
             "Matched material threshold: Steel at " + str(product.materials.get("steel", 0)),
         ],
-        risk_score=0.15,
+        risk_score=risk_score,
         confidence=confidence,
         confidence_interval=ci,
         requires_human_review=requires_human_review,
@@ -159,6 +223,9 @@ async def classify_product(product: ProductSpecs) -> TariffResponse:
         total_landed_cost=agent.calculate_landed_cost(duty_percent),
     )
 
+    if requires_human_review:
+        response.review_ticket_id = _create_review_ticket(product, response)
+
     # Legal audit trail: persist the reasoning and inputs.
     log_payload = {
         "id": f"{int(time.time())}",
@@ -166,7 +233,7 @@ async def classify_product(product: ProductSpecs) -> TariffResponse:
         "request": product.model_dump(),
         "response": response.model_dump(),
         "policy": {
-            "human_in_the_loop_threshold": 0.92,
+            "human_in_the_loop_threshold": HUMAN_REVIEW_LOWER_CONFIDENCE_THRESHOLD,
             "requires_human_review": requires_human_review,
             "review_reasons": review_reasons,
             "legal_disclaimer": response.legal_disclaimer,

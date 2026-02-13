@@ -53,6 +53,43 @@ npm run dev
 
 - `GET /` - Root welcome message
 - `GET /health` - Health check
+- `POST /api/classify` - Classification with confidence, legal citations, and optional review ticket
+- `GET /api/sources` - Authoritative tariff/compliance source registry
+- `GET /api/reviews` - List review tickets
+- `GET /api/reviews/{review_id}` - Review ticket detail
+- `POST /api/reviews/{review_id}/decision` - Approve/reject review ticket with audit event
+- `GET /api/classification-report/{review_id}` - Customer-facing “why this classification” report payload
+- `POST /api/pilot/onboard` - Pilot intake for customer entries
+- `GET /api/pilot/prioritize/{batch_id}` - Top recoverable opportunities ranked by potential recovery
+- `POST /api/pilot/claim-packet/{batch_id}` - Generate claim packet JSON + audit event
+- `GET /api/metrics/summary` - Review and packet generation operational metrics
+
+### One-command Validation
+
+Run the full release gate (restart/build + smoke + tests + health):
+
+```bash
+bash scripts/release_check.sh
+```
+
+This script executes:
+
+- `scripts/run_all.sh`
+- `scripts/smoke_check.sh`
+- `pytest backend/tests/test_api.py -q`
+- `GET /health` final check
+
+### Sales Pack PDF
+
+Generate a customer-facing pitch PDF:
+
+```bash
+/Users/bthrax/DutyGuard-AI/backend/.venv-fastapi/bin/python scripts/generate_customer_pitch_pdf.py
+```
+
+Output file:
+
+- `docs/DutyGuard_First_Customer_Pitch.pdf`
 
 ## Environment Configuration
 
@@ -63,6 +100,23 @@ PORT=8000
 DATABASE_URL="sqlite:///./dev.db"
 SECRET_KEY="your_jwt_secret"
 ```
+
+### Contact Notifications (optional)
+
+To email your team when a new Contact Us form is submitted, set:
+
+```bash
+DUTYGUARD_NOTIFY_EMAIL_TO="ops@yourcompany.com"
+DUTYGUARD_NOTIFY_EMAIL_FROM="noreply@yourcompany.com"
+DUTYGUARD_SMTP_HOST="smtp.yourprovider.com"
+DUTYGUARD_SMTP_PORT="587"
+DUTYGUARD_SMTP_USERNAME="smtp-user"
+DUTYGUARD_SMTP_PASSWORD="smtp-password"
+DUTYGUARD_SMTP_STARTTLS="1"
+DUTYGUARD_SMTP_SSL="0"
+```
+
+If these are not configured, intake submissions still work and are stored locally in `backend/data/intakes/`.
 
 ## Technology Stack
 

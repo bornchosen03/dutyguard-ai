@@ -21,8 +21,20 @@ elif [ -d "$ROOT/backend/.venv" ]; then
   source "$ROOT/backend/.venv/bin/activate"
 fi
 
-python -m pip install --upgrade pip >/dev/null 2>&1 || true
-pip install -r "$ROOT/requirements.dashboard.txt"
+FORCE_DASHBOARD_DEPS="${FORCE_DASHBOARD_DEPS:-0}"
+
+if [ "$FORCE_DASHBOARD_DEPS" = "1" ]; then
+  python -m pip install --upgrade pip >/dev/null 2>&1 || true
+  pip install -r "$ROOT/requirements.dashboard.txt"
+else
+  if ! python -c "import streamlit, pandas, plotly, requests" >/dev/null 2>&1; then
+    echo "[run_dashboard] Missing dashboard deps; installing requirements.dashboard.txt"
+    python -m pip install --upgrade pip >/dev/null 2>&1 || true
+    pip install -r "$ROOT/requirements.dashboard.txt"
+  else
+    echo "[run_dashboard] Dashboard deps present; skipping pip install"
+  fi
+fi
 
 export STREAMLIT_BROWSER_GATHER_USAGE_STATS="false"
 export STREAMLIT_TELEMETRY_DISABLED="1"

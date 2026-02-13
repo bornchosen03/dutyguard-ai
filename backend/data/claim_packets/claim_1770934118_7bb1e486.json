@@ -1,0 +1,22 @@
+{
+  "id": "claim_1770934118_7bb1e486",
+  "created_at_utc": "2026-02-12T22:08:38Z",
+  "batch_id": "pilot_1770934118_5763567c",
+  "customer_name": "Smoke Test Imports",
+  "top_opportunities": [
+    {
+      "sku": "SM-100",
+      "description": "Industrial controller module",
+      "import_value": 100000.0,
+      "current_duty_rate": 0.08,
+      "suggested_duty_rate": 0.04,
+      "confidence": 0.93,
+      "potential_recovery": 4000.0
+    }
+  ],
+  "summary": {
+    "total_entries": 1,
+    "total_potential_recovery": 4000.0
+  },
+  "legal_disclaimer": "Opportunity ranking is decision support only and requires qualified customs/legal review."
+}

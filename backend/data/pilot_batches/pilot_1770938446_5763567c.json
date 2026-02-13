@@ -1,0 +1,15 @@
+{
+  "id": "pilot_1770938446_5763567c",
+  "customer_name": "Smoke Test Imports",
+  "created_at_utc": "2026-02-12T23:20:46Z",
+  "entries": [
+    {
+      "sku": "SM-100",
+      "description": "Industrial controller module",
+      "import_value": 100000.0,
+      "current_duty_rate": 0.08,
+      "suggested_duty_rate": 0.04,
+      "confidence": 0.93
+    }
+  ]
+}

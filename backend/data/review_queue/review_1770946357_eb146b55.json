@@ -1,0 +1,58 @@
+{
+  "id": "review_1770946357_eb146b55",
+  "status": "approved",
+  "created_at_utc": "2026-02-13T01:32:37Z",
+  "request": {
+    "name": "Workflow sample",
+    "description": "short",
+    "materials": {},
+    "value": 120000.0,
+    "origin_country": "CN",
+    "destination_country": "US",
+    "intended_use": "qa"
+  },
+  "response": {
+    "suggested_hs_code": "8471.30.01",
+    "duty_rate": "5.0%",
+    "reasoning_manifesto": [
+      "Analyzed General Goods based on GRI 1.",
+      "Cross-referenced intended use: qa",
+      "Matched material threshold: Steel at 0"
+    ],
+    "risk_score": 0.73,
+    "confidence": 0.542,
+    "confidence_interval": [
+      0.47620000000000007,
+      0.6078
+    ],
+    "requires_human_review": true,
+    "review_reasons": [
+      "Product description is too short for reliable legal classification.",
+      "Material composition is missing.",
+      "Intended use detail is insufficient.",
+      "Lower-bound confidence is below legal review threshold (0.90)."
+    ],
+    "legal_citations": [
+      "General Rules of Interpretation (GRI) 1 and 6",
+      "HTSUS Section and Chapter Notes (as applicable)",
+      "19 CFR Part 141 (entry documentation requirements)",
+      "19 CFR Part 152 (customs valuation framework)",
+      "CBP CROSS rulings (fact-specific precedent)"
+    ],
+    "legal_disclaimer": "This output is decision-support only and not legal advice; final tariff classification requires qualified customs/legal review.",
+    "engineering_tip": "No immediate engineering arbitrage detected.",
+    "total_landed_cost": 126000.0,
+    "reasoning_log_path": null,
+    "review_ticket_id": null
+  },
+  "review_reasons": [
+    "Product description is too short for reliable legal classification.",
+    "Material composition is missing.",
+    "Intended use detail is insufficient.",
+    "Lower-bound confidence is below legal review threshold (0.90)."
+  ],
+  "decision": "approved",
+  "reviewer": "qa-reviewer",
+  "decision_notes": "Validated",
+  "decided_at_utc": "2026-02-13T01:32:37Z"
+}
