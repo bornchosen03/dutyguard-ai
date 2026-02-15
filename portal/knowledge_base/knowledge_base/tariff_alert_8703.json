@@ -1,0 +1,9 @@
+{
+  "source": "USITC",
+  "hs_prefix": "8703",
+  "fetched_at_utc": "2026-02-13T00:42:08.062580+00:00",
+  "row_count": 0,
+  "csv_path": "/Users/bthrax/DutyGuard-AI/knowledge_base/live_tariffs_8703.csv",
+  "csv_sha256": "c9bb14e9fb8bc94970a60bfda29cd3d78ffc940c46e009744968a4d36743d4b6",
+  "checked_at_utc": "2026-02-13T00:42:08.063015+00:00"
+}

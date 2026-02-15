@@ -1,0 +1,16 @@
+{
+  "imported_at_utc": "2026-02-13T02:07:25.674123Z",
+  "files": {
+    "htsdata.csv": {
+      "path": "knowledge_base/htsdata.csv",
+      "sha256": "5a5235e6ae34e376eb3ecf666cd13ce18d92bf8c124ed46bd9db82720e663b13",
+      "size_bytes": 55901,
+      "rows": 481
+    },
+    "finalCopy_2026HTSRev3.pdf": {
+      "path": "backend/data/backups/finalCopy_2026HTSRev3.pdf",
+      "sha256": "bf13f4a0bf3c60358099769a0acfd55f350af729f7a88f4b1de2e9825b771cdd",
+      "size_bytes": 132921428
+    }
+  }
+}

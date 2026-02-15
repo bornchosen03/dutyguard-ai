@@ -1,0 +1,14 @@
+[Unit]
+Description=DutyGuard-AI Backend FastAPI Server
+After=network.target
+
+[Service]
+Type=simple
+User=bthrax
+WorkingDirectory=/Users/bthrax/DutyGuard-AI/backend
+ExecStart=/Users/bthrax/DutyGuard-AI/backend/.venv-fastapi/bin/uvicorn app.main:app --host 0.0.0.0 --port 8080
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

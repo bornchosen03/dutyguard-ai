@@ -1,0 +1,11 @@
+# Example cron jobs for backend automation
+# Run scheduled tasks every 5 minutes
+*/5 * * * * /Users/bthrax/DutyGuard-AI/backend/scheduled_tasks.sh
+# Daily backup at midnight
+0 0 * * * /Users/bthrax/DutyGuard-AI/backend/daily_backup.sh
+# Log rotation daily
+0 1 * * * /usr/sbin/logrotate /Users/bthrax/DutyGuard-AI/backend/logrotate_backend.conf
+# Disk usage report daily
+0 2 * * * /Users/bthrax/DutyGuard-AI/backend/disk_usage_report.sh
+# API response time monitor every hour
+0 * * * * /Users/bthrax/DutyGuard-AI/backend/api_response_time.sh

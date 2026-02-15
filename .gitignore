@@ -16,6 +16,13 @@ backend/data/uploads/
 backend/data/intakes/
 backend/data/reasoning_logs/
 
+# Portal subpaths (local development data & built assets)
+portal/backend/backend/data/
+portal/backend/backend/data/**
+portal/frontend/customer-portal/dist/
+portal/frontend/customer-portal/node_modules/
+portal/frontend/customer-portal/.env
+
 # Knowledge base runtime artifacts (keep README.md)
 # Keep most KB artifacts ignored, but allow explicit imports when needed.
 knowledge_base/*.csv

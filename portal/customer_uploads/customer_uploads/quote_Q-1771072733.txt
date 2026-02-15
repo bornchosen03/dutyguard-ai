@@ -1,0 +1,9 @@
+Quote ID: Q-1771072733
+Date: 2026-02-14
+Customer: Test Customer
+Service: Tariff Analysis
+Amount: FREE (first 2 quotes are free)
+Status: Pending
+---
+This quote is free as part of your first 2 free quotes!
+Thank you for considering DutyGuard-AI!
