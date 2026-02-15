@@ -23,6 +23,7 @@ from email.message import EmailMessage
 from enum import Enum
 from pathlib import Path
 from typing import Any
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi import Form
@@ -91,7 +92,17 @@ _intake_rate_lock = threading.Lock()
 _intake_rate_buckets: dict[str, list[float]] = {}
 
 
-app = FastAPI(title="DutyGuard-AI", version="0.1.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup checks
+    if not _notifications_configured():
+        print("[startup] WARNING: Notification SMTP or notify-to is not configured.")
+        print("[startup] Set DUTYGUARD_NOTIFY_EMAIL_TO and DUTYGUARD_SMTP_HOST to enable email notifications.")
+    yield
+
+
+# Create the app with the lifespan handler to replace deprecated on_event startup
+app = FastAPI(title="DutyGuard-AI", version="0.1.0", lifespan=lifespan)
 
 
 # Basic security headers middleware (CSP kept minimal; adjust per deployment)
@@ -135,13 +146,6 @@ def _notifications_configured() -> bool:
     notify_to = os.getenv("DUTYGUARD_NOTIFY_EMAIL_TO", "").strip()
     smtp_host = os.getenv("DUTYGUARD_SMTP_HOST", "").strip()
     return bool(notify_to and smtp_host)
-
-
-@app.on_event("startup")
-def _startup_checks() -> None:
-    if not _notifications_configured():
-        print("[startup] WARNING: Notification SMTP or notify-to is not configured.")
-        print("[startup] Set DUTYGUARD_NOTIFY_EMAIL_TO and DUTYGUARD_SMTP_HOST to enable email notifications.")
 
 
 SOURCE_REGISTRY = [
