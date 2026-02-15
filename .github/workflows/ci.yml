@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master, feat/upgrade-backend-deps ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install backend deps
+        run: |
+          cd portal/backend/backend
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install pip-audit
+      - name: Run pip-audit
+        run: |
+          cd portal/backend/backend
+          python -m pip_audit --format git
+      - name: Run pytest
+        run: |
+          cd portal
+          PYTHONPATH=$(pwd) python -m pytest -q backend/backend/tests
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install frontend deps
+        run: |
+          cd portal/frontend/customer-portal
+          npm ci
+      - name: Run npm audit
+        run: |
+          cd portal/frontend/customer-portal
+          npm audit --audit-level=moderate || true
+      - name: Build frontend
+        run: |
+          cd portal/frontend/customer-portal
+          npm run build

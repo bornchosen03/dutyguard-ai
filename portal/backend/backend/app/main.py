@@ -40,7 +40,27 @@ ALERTS_JSON_PATH = (KNOWLEDGE_BASE_DIR / "tariff_alerts.json").resolve()
 
 
 BASE_DIR = Path(__file__).resolve().parents[1]
-DIST_DIR = (BASE_DIR / ".." / "customer-portal" / "dist").resolve()
+# Resolve the frontend `dist` directory by searching upward from the backend
+# package root. This makes the backend robust to both monorepo layouts and
+# the `portal/` consolidation layout used in this workspace.
+_candidate_paths: list[Path] = []
+# Common quick checks
+_candidate_paths.append((BASE_DIR / ".." / "customer-portal" / "dist").resolve())
+# Walk several ancestors and look for `frontend/customer-portal/dist` or
+# `portal/frontend/customer-portal/dist` under each ancestor.
+for anc in [BASE_DIR] + list(BASE_DIR.parents):
+    _candidate_paths.append((anc / "frontend" / "customer-portal" / "dist").resolve())
+    _candidate_paths.append((anc / "portal" / "frontend" / "customer-portal" / "dist").resolve())
+
+# Deduplicate while preserving order
+seen = set()
+_candidate_paths = [p for p in _candidate_paths if not (str(p) in seen or seen.add(str(p)))]
+
+# Pick the first existing path, otherwise default to the first candidate
+DIST_DIR = next((p for p in _candidate_paths if p.exists()), _candidate_paths[0])
+if not DIST_DIR.exists():
+    checked = [str(p) for p in _candidate_paths]
+    print(f"[startup] Customer portal dist not found at any candidate path; checked: {checked}; using: {str(DIST_DIR)}")
 DATA_DIR = (BASE_DIR / "data").resolve()
 UPLOADS_DIR = (DATA_DIR / "uploads").resolve()
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
