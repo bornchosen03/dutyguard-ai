@@ -36,12 +36,13 @@ function getOrCreateUserKey(): string {
 export default function App() {
   // Color palette
   const colors = {
-    primary: "#2563eb",
-    accent: "#f59e42",
-    accent2: "#22c55e",
-    background: "#f9fafb",
-    highlight: "#fde047",
-    text: "#111827",
+    primary: "#0ea5e9",
+    accent: "#ff4d6d",
+    accent2: "#9b5cff",
+    accent3: "#00d4ff",
+    background: "#000000",
+    highlight: "#ffd166",
+    text: "#f8fafc",
   };
 
   // Header and navigation items
@@ -76,6 +77,7 @@ export default function App() {
   const [contactStatus, setContactStatus] = React.useState<string | null>(null);
   const [contactError, setContactError] = React.useState<string | null>(null);
   const [isSubmittingIntake, setIsSubmittingIntake] = React.useState(false);
+  const [remainingQuotes, setRemainingQuotes] = React.useState<number | null>(null);
   // Lead-capture modal state
   const [showLeadModal, setShowLeadModal] = React.useState(false);
   const [leadCompany, setLeadCompany] = React.useState("");
@@ -140,6 +142,18 @@ export default function App() {
   }, []);
 
   React.useEffect(() => {
+    // fetch remaining free-quote count for this user
+    (async () => {
+      try {
+        const res = await fetch(`/api/quote-status?user=${encodeURIComponent(userKey)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        setRemainingQuotes(typeof data.remaining === 'number' ? data.remaining : null);
+      } catch (e) {
+        // ignore
+      }
+    })();
+
     // Inject Tawk.to live chat widget
     const script = document.createElement("script");
     script.src = "https://embed.tawk.to/your_tawkto_property_id/default";
@@ -339,7 +353,7 @@ export default function App() {
           </div>
           {/* Current Status */}
           <div style={{ fontWeight: 600, marginBottom: 16 }}>
-            You have 1 free quote left!
+            {remainingQuotes === null ? 'Checking free quotes...' : `You have ${remainingQuotes} free quote${remainingQuotes === 1 ? '' : 's'} left!`}
           </div>
           {/* Recent Activity */}
           <div style={{ marginBottom: 16 }}>

@@ -82,6 +82,30 @@ INTAKES_DIR.mkdir(parents=True, exist_ok=True)
 
 NOTIFICATIONS_FALLBACK_PATH = (DATA_DIR / "intake_notifications.jsonl").resolve()
 
+# Quotas storage (simple JSON file mapping user_key -> remaining_free_quotes)
+QUOTAS_PATH = (DATA_DIR / "quotas.json").resolve()
+_quota_lock = threading.Lock()
+
+
+def _load_quotas() -> dict:
+    try:
+        if QUOTAS_PATH.exists():
+            return json.loads(QUOTAS_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return {}
+
+
+def _save_quotas(d: dict) -> None:
+    try:
+        QUOTAS_PATH.parent.mkdir(parents=True, exist_ok=True)
+        QUOTAS_PATH.write_text(json.dumps(d, indent=2), encoding="utf-8")
+    except Exception as exc:
+        print(f"[quota] Failed to save quotas: {exc}")
+
+
+DEFAULT_FREE_QUOTES = int(os.getenv("DUTYGUARD_FREE_QUOTES", "1"))
+
 # Security / limits
 MAX_UPLOAD_BYTES = int(os.getenv("DUTYGUARD_MAX_UPLOAD_BYTES", str(10 * 1024 * 1024)))
 MAX_TOTAL_INTAKE_BYTES = int(os.getenv("DUTYGUARD_MAX_TOTAL_INTAKE_BYTES", str(25 * 1024 * 1024)))
@@ -396,6 +420,75 @@ def list_sources() -> dict[str, Any]:
         "sources": SOURCE_REGISTRY,
         "legal_disclaimer": "Source links are references only; legal determinations require qualified human review.",
     }
+
+
+@app.get("/api/quote-status")
+def api_quote_status(user: str | None = None) -> dict:
+    """Return remaining free quotes for a user (simple per-user quota store).
+
+    Query param: `user` - user key (client-side generated and stored in localStorage).
+    """
+    key = (user or "").strip() or "anonymous"
+    with _quota_lock:
+        quotas = _load_quotas()
+        remaining = int(quotas.get(key, DEFAULT_FREE_QUOTES))
+    return {"ok": True, "user": key, "remaining": remaining}
+
+
+@app.post("/api/quote-consume")
+def api_quote_consume(user: str | None = None) -> dict:
+    """Consume one free quote for `user` if available. Returns remaining count and whether it was consumed.
+    """
+    key = (user or "").strip() or "anonymous"
+    consumed = False
+    with _quota_lock:
+        quotas = _load_quotas()
+        remaining = int(quotas.get(key, DEFAULT_FREE_QUOTES))
+        if remaining > 0:
+            remaining -= 1
+            quotas[key] = remaining
+            _save_quotas(quotas)
+            consumed = True
+    return {"ok": True, "user": key, "remaining": remaining, "consumed": consumed}
+
+
+@app.get("/api/smtp_check")
+def api_smtp_check() -> dict:
+    """Quick SMTP smoke-check using env vars. Attempts to connect (and optionally login) but does not send mail.
+
+    Returns JSON with success flag and message or error.
+    """
+    notify_to = os.getenv("DUTYGUARD_NOTIFY_EMAIL_TO", "").strip()
+    smtp_host = os.getenv("DUTYGUARD_SMTP_HOST", "").strip()
+    if not smtp_host:
+        return {"ok": False, "message": "DUTYGUARD_SMTP_HOST is not configured"}
+
+    smtp_port = _smtp_int(os.getenv("DUTYGUARD_SMTP_PORT", "587"), 587)
+    smtp_username = os.getenv("DUTYGUARD_SMTP_USERNAME", "").strip()
+    smtp_password = os.getenv("DUTYGUARD_SMTP_PASSWORD", "").strip()
+    use_ssl = _bool_env("DUTYGUARD_SMTP_SSL", False)
+    use_starttls = _bool_env("DUTYGUARD_SMTP_STARTTLS", True)
+
+    try:
+        if use_ssl:
+            client = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=5)
+        else:
+            client = smtplib.SMTP(smtp_host, smtp_port, timeout=5)
+        with client:
+            if (not use_ssl) and use_starttls:
+                try:
+                    client.starttls()
+                except Exception:
+                    # starttls might not be supported; continue to allow plain connections
+                    pass
+            if smtp_username:
+                try:
+                    client.login(smtp_username, smtp_password)
+                except Exception as exc:
+                    return {"ok": False, "message": f"login failed: {exc}"}
+        return {"ok": True, "message": "smtp connect successful"}
+    except Exception as exc:
+        return {"ok": False, "message": f"smtp connect failed: {exc}"}
 
 
 def _safe_name(name: str) -> str:
