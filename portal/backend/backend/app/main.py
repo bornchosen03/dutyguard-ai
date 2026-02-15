@@ -106,6 +106,20 @@ def _save_quotas(d: dict) -> None:
 
 DEFAULT_FREE_QUOTES = int(os.getenv("DUTYGUARD_FREE_QUOTES", "1"))
 
+
+def _consume_free_quote(user: str) -> tuple[bool, int]:
+    """Attempt to consume one free quote for `user`. Returns (consumed, remaining)."""
+    key = (user or "").strip() or "anonymous"
+    with _quota_lock:
+        quotas = _load_quotas()
+        remaining = int(quotas.get(key, DEFAULT_FREE_QUOTES))
+        if remaining > 0:
+            remaining -= 1
+            quotas[key] = remaining
+            _save_quotas(quotas)
+            return True, remaining
+        return False, remaining
+
 # Security / limits
 MAX_UPLOAD_BYTES = int(os.getenv("DUTYGUARD_MAX_UPLOAD_BYTES", str(10 * 1024 * 1024)))
 MAX_TOTAL_INTAKE_BYTES = int(os.getenv("DUTYGUARD_MAX_TOTAL_INTAKE_BYTES", str(25 * 1024 * 1024)))
@@ -452,6 +466,30 @@ def api_quote_consume(user: str | None = None) -> dict:
     return {"ok": True, "user": key, "remaining": remaining, "consumed": consumed}
 
 
+@app.post("/api/quote-reset")
+def api_quote_reset(request: Request, user: str | None = None, admin_key: str | None = None) -> dict:
+    """Reset a user's free-quote count to DEFAULT_FREE_QUOTES.
+
+    - Without an admin key: only resets the requesting user's quota.
+    - With a valid admin key (matches DUTYGUARD_ADMIN_KEY), allows resetting an arbitrary user via `user` param.
+    """
+    provided = (admin_key or request.headers.get("x-admin-key") or request.query_params.get("admin_key") or "").strip()
+    admin_env = os.getenv("DUTYGUARD_ADMIN_KEY", "").strip()
+    if provided and provided == admin_env:
+        # admin may reset any provided user, default to 'anonymous' when not provided
+        target = (user or "").strip() or "anonymous"
+    else:
+        # non-admins can only reset their own quota
+        target = _resolve_user_key(request)
+
+    with _quota_lock:
+        quotas = _load_quotas()
+        quotas[target] = int(DEFAULT_FREE_QUOTES)
+        _save_quotas(quotas)
+
+    return {"ok": True, "user": target, "remaining": int(quotas.get(target, DEFAULT_FREE_QUOTES))}
+
+
 @app.get("/api/smtp_check")
 def api_smtp_check() -> dict:
     """Quick SMTP smoke-check using env vars. Attempts to connect (and optionally login) but does not send mail.
@@ -746,12 +784,17 @@ async def upload_tariff_file(request: Request, file: UploadFile = File(...)) -> 
     stored_path = user_uploads_dir / stored_name
     stored_path.write_bytes(content)
 
+    # Attempt to consume a free quote for this user (MVP: one per upload)
+    consumed, remaining = _consume_free_quote(user_key)
+
     return {
         "id": sha256,
         "filename": filename,
         "storedName": stored_name,
         "bytes": len(content),
         "user": user_key,
+        "free_quote_consumed": consumed,
+        "free_quote_remaining": remaining,
     }
 
 

@@ -80,6 +80,9 @@ export default function App() {
   const [remainingQuotes, setRemainingQuotes] = React.useState<number | null>(null);
   // Lead-capture modal state
   const [showLeadModal, setShowLeadModal] = React.useState(false);
+  const [showAdminModal, setShowAdminModal] = React.useState(false);
+  const [adminOutput, setAdminOutput] = React.useState<string | null>(null);
+  const [adminLoading, setAdminLoading] = React.useState(false);
   const [leadCompany, setLeadCompany] = React.useState("");
   const [leadEmail, setLeadEmail] = React.useState("");
   const [leadFile, setLeadFile] = React.useState<File | null>(null);
@@ -124,12 +127,57 @@ export default function App() {
         const text = await res.text();
         throw new Error(`Upload failed (${res.status}): ${text}`);
       }
+      const body = await res.json();
       setUploadOk(`Uploaded: ${file.name}`);
+      // update remaining quotes when backend consumes one
+      if (typeof body.free_quote_remaining === "number") {
+        setRemainingQuotes(body.free_quote_remaining);
+      } else {
+        // fallback: refresh from server
+        try {
+          const qr = await fetch(`/api/quote-status?user=${encodeURIComponent(userKey)}`);
+          if (qr.ok) {
+            const qj = await qr.json();
+            setRemainingQuotes(typeof qj.remaining === 'number' ? qj.remaining : null);
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
       await refreshFiles();
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : String(err));
     } finally {
       e.target.value = "";
+    }
+  }
+
+  async function handleSmtpCheck() {
+    setAdminLoading(true);
+    setAdminOutput(null);
+    try {
+      const res = await fetch(`/api/smtp_check`);
+      const j = await res.json();
+      setAdminOutput(JSON.stringify(j, null, 2));
+    } catch (e) {
+      setAdminOutput(String(e));
+    } finally {
+      setAdminLoading(false);
+    }
+  }
+
+  async function handleResetQuota() {
+    setAdminLoading(true);
+    setAdminOutput(null);
+    try {
+      const res = await fetch(`/api/quote-reset`, { method: "POST" });
+      const j = await res.json();
+      setAdminOutput(JSON.stringify(j, null, 2));
+      if (j && typeof j.remaining === 'number') setRemainingQuotes(j.remaining);
+    } catch (e) {
+      setAdminOutput(String(e));
+    } finally {
+      setAdminLoading(false);
     }
   }
 
@@ -314,7 +362,10 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <button onClick={() => setShowAdminModal(true)} style={{ background: 'transparent', color: colors.text, border: '1px solid #333', borderRadius: 6, padding: '0.4rem 0.8rem', fontSize: 14, cursor: 'pointer' }}>
+            Admin
+          </button>
           <button style={{ background: colors.accent, color: '#fff', border: 'none', borderRadius: 6, padding: '0.5rem 1.2rem', fontWeight: 600, fontSize: 16, cursor: 'pointer' }}>
             Login / Signup
           </button>
@@ -443,6 +494,27 @@ export default function App() {
                   {leadSubmitting ? "Sending…" : "Request Estimate"}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin modal */}
+      {showAdminModal && (
+        <div role="dialog" aria-modal="true" style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', zIndex: 10000 }}>
+          <div style={{ background: '#0b1220', color: '#f8fafc', padding: 20, borderRadius: 8, width: 640, maxWidth: '94%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0 }}>Admin — Diagnostics</h3>
+              <div>
+                <button onClick={() => setShowAdminModal(false)} style={{ background: 'transparent', border: 'none', color: '#f8fafc', fontSize: 18 }}>✕</button>
+              </div>
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={handleSmtpCheck} disabled={adminLoading} style={{ background: colors.primary, color: '#000', border: 'none', borderRadius: 6, padding: '0.6rem 1rem', cursor: 'pointer' }}>{adminLoading ? 'Checking…' : 'SMTP Check'}</button>
+                <button onClick={handleResetQuota} disabled={adminLoading} style={{ background: colors.accent2, color: '#fff', border: 'none', borderRadius: 6, padding: '0.6rem 1rem', cursor: 'pointer' }}>Reset My Quota</button>
+              </div>
+              <pre style={{ marginTop: 12, background: '#071021', padding: 12, borderRadius: 6, maxHeight: 240, overflow: 'auto', color: '#d1e8ff' }}>{adminOutput ?? 'No output yet.'}</pre>
             </div>
           </div>
         </div>
