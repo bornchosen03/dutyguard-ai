@@ -2,8 +2,8 @@
 # DutyGuard-AI Pricing Table
 
 
-## Free Quotes (First 2 Are On Us!)
-- **Your first 2 quotes are completely free—no obligation, no payment required.**
+## Free Quotes (First Quote Is On Us!)
+- **Your first quote is completely free—no obligation, no payment required.**
 - After that, standard pricing applies for additional quotes and all paid services.
 
 ### What’s included in a free quote:
@@ -26,8 +26,8 @@
 
 
 ## How It Works
-1. Customer uploads data and receives a free quote (first 2 are free).
-2. If more than 2 quotes are requested, standard quote pricing applies.
+1. Customer uploads data and receives a free quote (first quote is free).
+2. If more than 1 quote is requested, standard quote pricing applies.
 3. If the customer accepts a quote, you send an invoice and collect payment.
 4. After payment, you deliver the full results and access.
 

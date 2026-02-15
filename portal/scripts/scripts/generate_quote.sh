@@ -21,9 +21,9 @@ if [ -f "$TRACKER" ]; then
   COUNT=$(grep -c "^$CUSTOMER:" "$TRACKER")
 fi
 
-if [ "$COUNT" -lt 2 ]; then
+if [ "$COUNT" -lt 1 ]; then
   echo "$CUSTOMER: $DATE $QUOTE_ID (free)" >> "$TRACKER"
-  AMOUNT_DISPLAY="FREE (first 2 quotes are free)"
+  AMOUNT_DISPLAY="FREE (first quote is free)"
 else
   echo "$CUSTOMER: $DATE $QUOTE_ID (paid)" >> "$TRACKER"
   AMOUNT_DISPLAY="$AMOUNT (standard pricing applies)"
@@ -36,8 +36,8 @@ echo "Service: $SERVICE" >> $OUT
 echo "Amount: $AMOUNT_DISPLAY" >> $OUT
 echo "Status: Pending" >> $OUT
 echo "---" >> $OUT
-if [ "$COUNT" -lt 2 ]; then
-  echo "This quote is free as part of your first 2 free quotes!" >> $OUT
+if [ "$COUNT" -lt 1 ]; then
+  echo "This quote is free (first quote is free)!" >> $OUT
 else
   echo "Standard pricing applies for this and future quotes." >> $OUT
 fi

@@ -1,9 +1,11 @@
 INFO:     Will watch for changes in these directories: ['/Users/bthrax/DutyGuard-AI/portal/backend/backend']
 INFO:     Uvicorn running on http://127.0.0.1:8080 (Press CTRL+C to quit)
-INFO:     Started reloader process [32374] using WatchFiles
-INFO:     Started server process [32431]
+INFO:     Started reloader process [40553] using WatchFiles
+INFO:     Started server process [40556]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 [startup] WARNING: Notification SMTP or notify-to is not configured.
 [startup] Set DUTYGUARD_NOTIFY_EMAIL_TO and DUTYGUARD_SMTP_HOST to enable email notifications.
-INFO:     127.0.0.1:56423 - "GET /guardduty HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56645 - "GET /guardduty HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56645 - "GET /assets/index-BqY-vGrh.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56646 - "GET /assets/index-CFf-TcXa.css HTTP/1.1" 200 OK

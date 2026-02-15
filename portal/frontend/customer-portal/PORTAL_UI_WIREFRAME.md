@@ -22,7 +22,7 @@
 
 ### Main Dashboard
 - **Progress Bar:** Shows steps (Upload → Quote → Payment → Results)
-- **Current Status:** “You have 1 free quote left!”
+-- **Current Status:** “You have 1 free quote left!”
 - **Recent Activity:** List of uploads, quotes, invoices, results
 - **CTA:** “Get Started” or “Upload Now”
 

@@ -314,7 +314,7 @@ export default function App() {
             Unlock Your Tariff Data Instantly
           </h1>
           <div style={{ display: 'inline-block', background: colors.highlight, color: colors.text, fontWeight: 700, borderRadius: 8, padding: '0.3rem 1rem', marginBottom: 16 }}>
-            First 2 Quotes Free!
+            First Quote Free!
           </div>
           <div style={{ margin: '2rem 0' }}>
             <button

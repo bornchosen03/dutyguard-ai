@@ -5,5 +5,5 @@ Service: Tariff Analysis
 Amount: FREE (first 2 quotes are free)
 Status: Pending
 ---
-This quote is free as part of your first 2 free quotes!
+This quote is free (first quote is free)!
 Thank you for considering DutyGuard-AI!

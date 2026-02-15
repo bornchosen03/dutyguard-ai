@@ -18,7 +18,8 @@ python3 -m pip_audit --format json || true
 
 echo "[run_all] Running backend tests"
 cd "$ROOT_DIR"
-PYTHONPATH=portal python3 -m pytest -q backend/backend/tests || true
+# Ensure pytest runs the tests inside the portal/backend/backend/tests path
+PYTHONPATH=portal python3 -m pytest -q portal/backend/backend/tests || true
 
 echo "[run_all] Starting backend server"
 "$ROOT_DIR/scripts/start_backend.sh"
